@@ -5,7 +5,7 @@ if not has_telescope then
   error("nvim-telescope/telescope.nvim not found")
 end
 
-local telescope_gradle = require("telescope-gradle")
+local telescope_gradle = require("gradle")
 
 return telescope.register_extension({
   setup = setup,
