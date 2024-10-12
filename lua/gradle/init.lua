@@ -5,9 +5,12 @@ local actions = require("telescope.actions")
 local action_state = require("telescope.actions.state")
 
 local M = {}
+local opts = {
+  split = "vsplit",
+}
 
 M.run_gradle_task = function(args)
-  vim.cmd("split | term ./gradlew " .. args.args)
+  vim.cmd(opts.split .. " | term ./gradlew " .. args.args)
 end
 
 local function is_gradle_daemon_running()
@@ -71,7 +74,6 @@ M.telescope_find_gradle_tasks = function(opts)
         actions.select_default:replace(function()
           actions.close(prompt_bufnr)
           local selection = action_state.get_selected_entry()
-          vim.notify(vim.inspect(selection))
           M.run_gradle_task({ args = ":" .. selection[1] })
         end)
         return true
@@ -79,4 +81,9 @@ M.telescope_find_gradle_tasks = function(opts)
     })
     :find()
 end
+
+M.setup = function(external_opts)
+  opts = vim.tbl_deep_extend("force", opts, external_opts)
+end
+
 return M
