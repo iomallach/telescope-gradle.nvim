@@ -67,7 +67,7 @@ local function async_prepare_gradle_daemon()
     args = { "--status" },
     on_exit = function(j, return_val)
       local result = table.concat(j:result(), "\n")
-      if string.match(result, "No gradle daemons are running") then
+      if string.match(result, "No Gradle daemons are running") then
         vim.notify("Spawning gradle daemon")
         async_spawn_gradle_daemon()
       end
