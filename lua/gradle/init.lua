@@ -38,7 +38,8 @@ local function async_cache_gradle_tasks()
     command = "./gradlew",
     args = { "tasks", "--no-rebuild", "--console", "plain" },
     on_exit = function(j, return_val)
-      M.tasks = parse_gradle_tasks(j)
+      local result = table.concat(j:result(), "\r\n")
+      M.tasks = parse_gradle_tasks(result)
       vim.notify("Gradle: Cached tasks!")
     end,
     on_stderr = on_stderr,
@@ -65,7 +66,8 @@ local function async_prepare_gradle_daemon()
     command = "./gradlew",
     args = { "--status" },
     on_exit = function(j, return_val)
-      if string.match(j, "No gradle daemons are running") then
+      local result = table.concat(j:result(), "\n")
+      if string.match(result, "No gradle daemons are running") then
         vim.notify("Spawning gradle daemon")
         async_spawn_gradle_daemon()
       end
