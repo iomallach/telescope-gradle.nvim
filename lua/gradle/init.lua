@@ -55,7 +55,6 @@ local function async_spawn_gradle_daemon()
         vim.notify("Successfully spawned gradle daemon", vim.log.levels.INFO)
         async_cache_gradle_tasks()
       end
-      vim.notify("Skipping caching tasks on " .. table.concat(j:result(), "\r\n"))
     end,
     on_stderr = on_stderr,
   }):start()
@@ -71,7 +70,6 @@ local function async_prepare_gradle_daemon()
         vim.notify("Spawning gradle daemon")
         async_spawn_gradle_daemon()
       end
-      vim.notify("Not spawning gradle daemon on " .. result)
     end,
     on_stderr = on_stderr,
   }):start()
@@ -141,9 +139,12 @@ M.telescope_find_gradle_tasks = function(opts)
     :find()
 end
 
+M.init = function()
+  async_prepare_gradle_daemon()
+end
+
 M.setup = function(external_opts)
   opts = vim.tbl_deep_extend("force", opts, external_opts)
-  async_prepare_gradle_daemon()
 end
 
 return M
