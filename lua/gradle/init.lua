@@ -54,6 +54,7 @@ local function async_spawn_gradle_daemon()
         vim.notify("Successfully spawned gradle daemon", vim.log.levels.INFO)
         async_cache_gradle_tasks()
       end
+      vim.notify("Skipping caching tasks on " .. j)
     end,
     on_stderr = on_stderr,
   }):start()
@@ -65,8 +66,10 @@ local function async_prepare_gradle_daemon()
     args = { "--status" },
     on_exit = function(j, return_val)
       if string.match(j, "No gradle daemons are running") then
+        vim.notify("Spawning gradle daemon")
         async_spawn_gradle_daemon()
       end
+      vim.notify("Not spawning gradle daemon on " .. j)
     end,
     on_stderr = on_stderr,
   })
