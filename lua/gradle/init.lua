@@ -55,7 +55,7 @@ local function async_spawn_gradle_daemon()
         vim.notify("Successfully spawned gradle daemon", vim.log.levels.INFO)
         async_cache_gradle_tasks()
       end
-      vim.notify("Skipping caching tasks on " .. j)
+      vim.notify("Skipping caching tasks on " .. table.concat(j:result(), "\r\n"))
     end,
     on_stderr = on_stderr,
   }):start()
@@ -71,7 +71,7 @@ local function async_prepare_gradle_daemon()
         vim.notify("Spawning gradle daemon")
         async_spawn_gradle_daemon()
       end
-      vim.notify("Not spawning gradle daemon on " .. j)
+      vim.notify("Not spawning gradle daemon on " .. result)
     end,
     on_stderr = on_stderr,
   }):start()
