@@ -1,13 +1,76 @@
+-- Telescope stuff
 local pickers = require("telescope.pickers")
 local finders = require("telescope.finders")
 local conf = require("telescope.config").values
 local actions = require("telescope.actions")
 local action_state = require("telescope.actions.state")
 
+-- Async stuff
+local Job = require("plenary.job")
+
 local M = {}
 local opts = {
   split = "vsplit",
 }
+
+local function parse_gradle_tasks(output)
+  local tasks = {}
+
+  for line in output:gmatch("[^\r\n]+") do
+    local task = line:match("^%s*([%w%-]+)%s+%-")
+
+    if task then
+      table.insert(tasks, task)
+    end
+  end
+
+  return tasks
+end
+
+local function on_stderr(_, data)
+  if data then
+    vim.notify(data, vim.log.levels.ERROR)
+  end
+end
+
+local function async_cache_gradle_tasks()
+  Job:new({
+    command = "./gradlew",
+    args = { "tasks", "--no-rebuild", "--console", "plain" },
+    on_exit = function(j, return_val)
+      M.tasks = parse_gradle_tasks(j)
+      vim.notify("Gradle: Cached tasks!")
+    end,
+    on_stderr = on_stderr,
+  })
+end
+
+local function async_spawn_gradle_daemon()
+  Job:new({
+    command = "./gradlew",
+    args = { "--daemon" },
+    on_exit = function(j, return_val)
+      if return_val == 0 then
+        vim.notify("Successfully spawned gradle daemon", vim.log.levels.INFO)
+        async_cache_gradle_tasks()
+      end
+    end,
+    on_stderr = on_stderr,
+  }):start()
+end
+
+local function async_prepare_gradle_daemon()
+  Job:new({
+    command = "./gradlew",
+    args = { "--status" },
+    on_exit = function(j, return_val)
+      if string.match(j, "No gradle daemons are running") then
+        async_spawn_gradle_daemon()
+      end
+    end,
+    on_stderr = on_stderr,
+  })
+end
 
 M.run_gradle_task = function(args)
   vim.cmd(opts.split .. " | term ./gradlew " .. args.args)
@@ -31,20 +94,6 @@ local function run_gradle_list()
   return out
 end
 
-local function parse_gradle_tasks(output)
-  local tasks = {}
-
-  for line in output:gmatch("[^\r\n]+") do
-    local task = line:match("^%s*([%w%-]+)%s+%-")
-
-    if task then
-      table.insert(tasks, task)
-    end
-  end
-
-  return tasks
-end
-
 local function list_gradle_tasks()
   if is_gradle_daemon_running() then
     return parse_gradle_tasks(run_gradle_list())
@@ -52,6 +101,10 @@ local function list_gradle_tasks()
     spawn_gradle_daemon()
     return parse_gradle_tasks(run_gradle_list())
   end
+end
+
+M.refresh_cache = function()
+  async_cache_gradle_tasks()
 end
 
 M.telescope_find_gradle_tasks = function(opts)
@@ -67,7 +120,8 @@ M.telescope_find_gradle_tasks = function(opts)
     .new(opts, {
       prompt_title = "Gradle tasks",
       finder = finders.new_table({
-        results = list_gradle_tasks(),
+        -- results = list_gradle_tasks(),
+        results = M.tasks,
       }),
       sorter = conf.generic_sorter(opts),
       attach_mappings = function(prompt_bufnr, map)
@@ -84,6 +138,7 @@ end
 
 M.setup = function(external_opts)
   opts = vim.tbl_deep_extend("force", opts, external_opts)
+  async_prepare_gradle_daemon()
 end
 
 return M
