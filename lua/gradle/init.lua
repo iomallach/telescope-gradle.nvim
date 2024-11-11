@@ -145,6 +145,7 @@ end
 
 M.setup = function(external_opts)
   opts = vim.tbl_deep_extend("force", opts, external_opts)
+  async_prepare_gradle_daemon()
 end
 
 return M
